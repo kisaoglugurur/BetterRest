@@ -5,12 +5,17 @@
 //  Created by Gurur on 17.06.2025.
 //
 
+import CoreML
 import SwiftUI
 
 struct ContentView: View {
     @State private var wakeUp: Date = Date.now
     @State private var sleepAmount: Double = 8.0
     @State private var coffeeAmount: Int = 1
+    
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var showAlert: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -35,12 +40,36 @@ struct ContentView: View {
             .toolbar {
                 Button("Calculate", action: calculateBedTime)
             }
+            .alert(alertTitle, isPresented: $showAlert) {
+                Button("OK") {}
+            } message: {
+                Text(alertMessage)
+            }
             .padding()
         }
     }
     
     func calculateBedTime() {
+        do {
+            let config = MLModelConfiguration()
+            let model = try SleepCalculator(configuration: config)
+            
+            let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
+            let hour = (components.hour ?? 0) * 60 * 60
+            let minute = (components.minute ?? 0) * 60
+            
+            let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
+            
+            let sleepTime = wakeUp - prediction.actualSleep
+            
+            alertTitle = "Ideal bed time"
+            alertMessage = sleepTime.formatted(date: .omitted, time: .shortened)
+        } catch {
+            alertTitle = "Error"
+            alertMessage = "Sorry, there was a problem calculating your bedtime."
+        }
         
+        showAlert = true
     }
 }
 
