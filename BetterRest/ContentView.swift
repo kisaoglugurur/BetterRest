@@ -20,40 +20,61 @@ struct ContentView: View {
     @State private var sleepAmount: Double = 8.0
     @State private var coffeeAmount: Int = 1
     
-    @State private var alertTitle = ""
-    @State private var alertMessage = ""
-    @State private var showAlert: Bool = false
+    @State private var estimatedBedTime: Date?
+    
+//    @State private var alertTitle = ""
+//    @State private var alertMessage = ""
+//    @State private var showAlert: Bool = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Text("When do you want to wake up?")
-                    .font(.headline)
+                Section {
+                    Text("When do you want to wake up?")
+                        .font(.headline)
+                    
+                    DatePicker("Please enter a time", selection: $wakeUp, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                }
                 
-                DatePicker("Please enter a time", selection: $wakeUp, displayedComponents: .hourAndMinute)
-                    .labelsHidden()
-                
-                VStack(alignment: .leading, spacing: 0) {
+                Section {
                     Text("Desired amount of sleep")
                         .font(.headline)
 
                     Stepper("\(sleepAmount.formatted()) hours", value: $sleepAmount, in: 4...12, step: 0.25)
                 }
                 
-                Text("Daily coffee intake")
-                    .font(.headline)
+                Section {
+                    Text("Daily coffee intake")
+                        .font(.headline)
+                    
+//                    Stepper("^[\(coffeeAmount) cup](inflect: true)", value: $coffeeAmount, in: 1...20)
+                    Picker("Select", selection: $coffeeAmount) {
+                        ForEach(1...20, id: \.self) {
+                            Text($0 == 1 ? "\($0) cup" : "\($0) cups")
+                        }
+                    }
+                }
                 
-                Stepper("^[\(coffeeAmount) cup](inflect: true)", value: $coffeeAmount, in: 1...20)
+                Section("Estimated bedtime") {
+                    Text(estimatedBedTime?.formatted(date: .omitted, time: .shortened) ?? "–")
+                }
             }
             .navigationTitle("BetterRest")
-            .toolbar {
-                Button("Calculate", action: calculateBedTime)
+//            .toolbar {
+//                Button("Calculate", action: calculateBedTime)
+//            }
+//            .alert(alertTitle, isPresented: $showAlert) {
+//                Button("OK") {}
+//            } message: {
+//                Text(alertMessage)
+//            }
+            .onAppear {
+                calculateBedTime()
             }
-            .alert(alertTitle, isPresented: $showAlert) {
-                Button("OK") {}
-            } message: {
-                Text(alertMessage)
-            }
+            .onChange(of: wakeUp) { _, _ in calculateBedTime() }
+            .onChange(of: sleepAmount) { _, _ in calculateBedTime() }
+            .onChange(of: coffeeAmount) { _, _ in calculateBedTime() }
         }
     }
     
@@ -70,14 +91,17 @@ struct ContentView: View {
             
             let sleepTime = wakeUp - prediction.actualSleep
             
-            alertTitle = "Ideal bed time"
-            alertMessage = sleepTime.formatted(date: .omitted, time: .shortened)
+            estimatedBedTime = sleepTime
+            
+//            alertTitle = "Ideal bed time"
+//            alertMessage = sleepTime.formatted(date: .omitted, time: .shortened)
         } catch {
-            alertTitle = "Error"
-            alertMessage = "Sorry, there was a problem calculating your bedtime."
+//            alertTitle = "Error"
+//            alertMessage = "Sorry, there was a problem calculating your bedtime."
+            estimatedBedTime = nil
         }
         
-        showAlert = true
+//        showAlert = true
     }
 }
 
